@@ -1,0 +1,332 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{setspace}
+
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, positioning}
+\usepackage{natbib}
+% Define styles for nodes and text
+\tikzstyle{method} = [rectangle, rounded corners, minimum width=3.5cm, minimum height=1.5cm, text centered, draw=black, fill=blue!20]
+\tikzstyle{example} = [rectangle, minimum width=3.5cm, minimum height=1.2cm, text centered, draw=black, fill=gray!10]
+
+\title{Toward Ethical Reasoning in Large Language Models - a progress report}
+\author{Sze Jian Cheng \\ [1cm]{ Advisor: Professor Leong Tze-Yun}}
+\date{AY24/25}
+
+
+\begin{document}
+\singlespacing
+\maketitle
+\newpage
+
+\tableofcontents
+\newpage
+
+\begin{abstract}
+The problem of aligning Artificial Intelligence (AI) to human values is a open and highly active research field. Owing to the rapid advancements in Large Language Models (LLMs), the problem of aligning LLMs has become a pressing issue worth exploring. This project aims to elucidate both the current approaches in aligning LLMs to human values and the challenges surrounding them. We hope in doing so to explore a novel hierarchical prompting approach to conducting moral reasoning, and apply it to an agentic framework that makes ethical decisions based on well-defined moral reasoning.  
+\end{abstract}
+
+
+
+
+\section{Introduction}
+
+Consider the trolley problem\cite{noauthor_next_nodate}:
+
+\begin{quote}
+\textit{    You are riding in a trolley without functioning brakes, headed toward a switch in the tracks. On the current track stand five people who stand to be killed if the trolley continues on its path. You have access to a switch that would make the trolley change to the other track, but another individual stands there. That person is certain to be killed if the switch is activated.
+}
+
+    \textit{So do you switch tracks or not?}
+\end{quote}
+
+Suppose you wished to consider a second opinion, and decided to consult ChatGPT \cite{openai_gpt-4_2024}. When we prompt ChatGPT \footnote{ChatGPT4o was accessed for this prompt in October 2024} for a concrete answer, we recieve a straightforward reply:
+\begin{quote}
+    ``Yes''
+\end{quote}
+
+This example, as well as many others like it raises key questions surrounding the usage and implementations of Large Language Models (LLMs): Should LLMs be allowed to answer questions on moral stance? And if so what should it be, and who or what process should be the one defining these stances? The importance of adequately answering these questions have been emphasized in research communities intersecting computer science, philosophy, and social sciences. \cite{chen2024surveylargelanguagemodels}\cite{shen2023largelanguagemodelalignment}\cite{hendrycks_aligning_2023}\cite{jiang_can_2022}\cite{ganguli_capacity_2023}
+
+This paper concerns itself with the last of these questions: how do we define the stances that LLMs take on moral questions? We hope that the approaches explored in this paper will help to guide future LLM value alignment projects. 
+
+\subsection{Problem statement}
+
+The intuition behind this project is as follows: It seems clear that imbuing the ability for an LLM to explicitly conduct moral reasoning might improve its ability to align to pre-defined values. This project aims to evaluate how different methods in implementing reasoning ability affect the performance of LLMs to conduct moral reasoning tasks. 
+
+\subsection{Research Objectives}
+The proposed contributions lined out in this paper are threefold:
+\begin{enumerate}
+    \item To ascertain how explicit moral decision making affects value-aligned behavior in LLMs, and if so the impact it has in larger vs smaller models.
+    \item  To explore methods in improving alignment, and hence accuracy of LLMs on moral decision making tasks.
+    \item To explore the effects of different methods on the interpretability of LLM moral decision making processes.
+\end{enumerate}
+
+
+\section{Literature review}
+
+Machine ethics is an emerging field that studies how ethical behavior can be accomplished by autonomous systems \cite{vishwanath_reinforcement_2024}\cite{tolmeijer_implementations_2021}. The question of what qualifies as ethical behavior remains an open question to the field. The advancements in this field can be broadly classified into "top-down" and "bottom-up" approaches \cite{wallach_machine_2008}. An evaluation of these approaches and our rationales for our focus can be found in \ref{motivation}.
+
+
+\subsection{``Top-down" approaches}
+These approaches assume that humans have gathered sufficient knowledge on the general principles of morality \cite{tolmeijer_implementations_2021}. These sets of fundamental principles can then be used to derive all ethical conclusions through logical reasoning. Well known examples of "Top-down" morality include Kant's Categorical Imperative \cite{kant_groundwork_1785}, the Three Laws of Robotics in science fiction \cite{asimov1942runaround}, Deontology \cite{alexander_deontological_2021}, Consequentialism \cite{sinnott-armstrong_consequentialism_2023}, and Virtue ethics \cite{hursthouse_virtue_2023}. 
+
+Previous attempts at implementing these approaches have been hindered by two interlinked challenges: Firstly, the inability for humans to express their internal values with sufficient accuracy and precision. Secondly, the model's inability to understand and utilise abstract guidance \cite{jiang_can_2022}\cite{zhao_ethical-advice_2021}
+
+\subsection{``Bottom-up" approaches}
+
+Existing projects in building models capable of moral judgment usually draw their methodologies from this latter approach \cite{hendrycks_aligning_2023}\cite{jiang_can_2022}\cite{ziems_moral_2022}. These approaches involve crowd-sourcing annotated scenarios and training models to make moral judgments based on this training corpus. 
+
+
+\subsection{Towards ethical LLMs}
+Contemporary methods in applying the field of machine ethics to LLMs can be broadly classified into two categories. 
+\begin{enumerate}
+    \item \textbf{In-context learning} 
+    
+    These involve conditioning the output of an LLM with a prompt detailing the expected attributes of the output \cite{schick_self-diagnosis_2021}\cite{zhao_ethical-advice_2021}
+    
+    \item \textbf{Supervised Fine-tuning} 
+    
+    This is a broad class of methods that fine-tune a LM to guide the model to replicate human-aligned responses\cite{liu_aligning_2022}\cite{ganguli_capacity_2023}.
+\end{enumerate}
+
+A third, more recently observed approach that shows promise is in moral reasoning \cite{rao_ethical_2023} \cite{zhou_rethinking_2024}. Reasoning itself is split into broad categories of approaches:
+\begin{enumerate}
+    \item \textbf{Eliciting reasoning steps} 
+    
+    This category relies on methods to prompt models in generating reasoning steps with the goal of improving the quality of the final output. Examples of this include Chain-of-Thought prompting, Tree-of-Thoughts, and Graph-of-Thoughts, where the model sequentially or hierarchically reasons through steps which it uses to generate a final response \cite{wei_chain--thought_2023}\cite{yao_tree_2023}\cite{besta_graph_2024}.
+    
+
+    \item \textbf{Tool augmentation}
+    
+    Tool augmentation involves integrating external tools, such as symbolic solvers \cite{pan_logic-lm_2023}, databases \cite{lewis_retrieval-augmented_2021}, and code interpreters \cite{gao_pal_2023} that augment the model's reasoning process. LLMs can achieve more accurate and responses by incorporating tools that carry out logical reasoning or validate outcomes.
+
+\end{enumerate}
+
+
+\subsection{Related work}
+
+Rao et al. (2023) \cite{rao_ethical_2023} has explored the ability of LLMs to comply with a natural language policy in moral dilemmas. Zhou et al. (2024) \cite{zhou_rethinking_2024} explored how LLMs can perform moral reasoning by invoking the name of the moral framework being tested. Perhaps closest to this project is Jin et al. (2022) \cite{jin_when_2022} where they proposed a novel prompting strategy MORALCOT to model human reasoning in moral exceptions, but stop short from evaluating other moral theories apart from Utilitarianism \cite{bentham_introduction_nodate}.  
+
+\subsection{Motivation and Novelty} \label{motivation}
+As observed in contemporary approaches, exploration into top-down approaches to moral reasoning rarely if ever incorporate explicit reasoning steps. There seems to be merit in understanding how implementing reasoning steps explicitly might improve the ability of LLMs in performing morally-relevant tasks. We will be narrowing in on purely prompting approaches for this project due to time and resource constraints, though tool-augmentation appears to be a promising approach to moral decision making as well.
+
+\textbf{A case for top-down rather than bottom-up morality}. We've identified two main areas in which bottom-up approaches, which are the predominant approach in aligning LLMs, are lacking. Firstly, the \textbf{Lack of Interpretability}. Common to these projects are a reliance on LMs to output a prediction label based on the training corpus. LMs have long been identified to be black boxes lacking in explainability, which impacts trust in high-impact AI systems \cite{hasselberger_ethics_2019} \cite{talat_machine_2022}. Second, are the \textbf{Biases in Representation} as these systems have proven to be susceptible to pervasive biases and inconsistencies present within the choice of annotators \cite{jiang_can_2022}. 
+
+More recently, efforts have been made to leverage the ability of newer and larger models to understand moral decision making \cite{huang2023reasoninglargelanguagemodels} \cite{ganguli_capacity_2023} \cite{zhou_rethinking_2024} which indicates great promise that top-down prompting approaches to morality might be suited to technology of the day. However among the limited literature surrounding top-down prompting approaches, no efforts have been put towards studied the effects of step-by-step prompting on moral question answering. For instance, Zhou et al. (2024) conditioned the answer of the LLM on a single line of theory-guided instructions, which usually involved invoking the name of the desired moral stance \cite{zhou_rethinking_2024}, an example of which is as follows: 
+
+\begin{quote}
+    (TI - Deontology) Considering
+deontology, analyze if the action
+or statement violates the duties
+or constraints of the request/role
+specified scenario.
+\end{quote}
+
+This project takes this approach further by specifying in greater detail the reasoning steps required in moral question answering, the details of which are covered in section \ref{framework}. 
+
+\section{Methodology}
+
+We borrow the formalism of ethical policies from Rao et al.\footnote{I'd like to attempt to model this decision making process as a narrowing of the set of all ethical policies (see Rao et al. (2023) \cite{rao_ethical_2023}), but I cannot quite come up with this formalism as of the submission of this report} \cite{rao_ethical_2023}:
+
+
+Let the hierarchical prompt \( p_h \) be an ordered composition \( P_h(.) \) of multiple sub-prompts, each representing a reasoning stage or level within a predefined hierarchy. Thus, \( p_h = P_h(p_1, p_2, \ldots, p_k) \), where each \( p_i \) corresponds to a specific level in the hierarchy, guiding the model from high-level ethical principles down to actionable decisions:
+\begin{itemize}
+    \item \textbf{\( p_1 \)} (Top-Level Prompt): Specifies high-level ethical principles, drawn from an ethical formalism \( F \), which frame the general context for decision-making.
+    \item \textbf{\( p_2 \)} (Mid-Level Prompt): Refines the task by integrating scenario-specific information or constraints, applying the high-level principles in the context of the user's input \( x \).
+    \item \textbf{\( p_3 \)} (Low-Level Prompt): Directs the model toward a concrete decision or recommendation, synthesizing information from previous stages.
+\end{itemize}
+
+
+Given a hierarchical prompt \( p_h \) the LLM \( L \) processes each sub-prompt \( p_i \) in sequence:
+\begin{enumerate}
+    \item \( y_1 \leftarrow L(p_1) \): Generates an initial ethical framing response based on high-level principles
+    \item \( y_2 \leftarrow L(p_2 \mid y_1) \): Refines the decision-making by incorporating scenario-specific details and adjusting priorities
+    \item \( y_3 \leftarrow L(p_3 \mid y_1, y_2) \): Produces the final decision, synthesizing previous outputs with the prioritized ethical guidance
+\end{enumerate}
+
+The final output \( y = y_3 \) represents a hierarchical decision aligned with ethical reasoning across multiple layers, from foundational principles to contextualized action.
+
+
+\subsection{Hierarchical Prompting Framework} \label{framework}
+
+Our hierarchical prompting framework is designed to guide (LLMs) through a multi-level process of ethical reasoning. The goal is to improve the interpretability and ethical alignment of model outputs by prompting the model to consider moral questions in a layered approach. 
+
+\subsubsection{Framework Structure}
+
+The hierarchical prompting framework consists of three main levels of prompts, each with a distinct purpose:
+\begin{enumerate}
+    \item \textbf{High-Level Ethical Principles (Top-Level Prompt)}:
+    
+    The first level involves prompting the model to consider broad ethical principles or frameworks that are relevant to the scenario. This prompt serves to introduce the overarching ethical approach (e.g., utilitarianism, deontology, virtue ethics) that will guide the subsequent reasoning steps. The model is encouraged to focus on high-level values such as "maximizing well-being" or "adhering to moral duty" depending on the scenario.
+    
+    \item \textbf{Contextual Considerations (Mid-Level Prompt)}:
+    
+    In the second level, the model is prompted to incorporate specific contextual details of the scenario into its reasoning. This prompt guides the model to assess how the high-level ethical principles apply within the unique context, considering factors such as the individuals involved, the potential outcomes, and any situational nuances. By anchoring ethical reasoning in the context, the model can tailor its responses to better reflect realistic moral judgment.
+    
+    \item \textbf{Actionable Decision-Making (Low-Level Prompt)}:
+    
+    The final level of prompting encourages the model to translate the ethical principles and contextual considerations into a concrete decision or recommendation. This level prompts the model to explicitly articulate the reasoning behind its decision, highlighting the steps taken to resolve potential conflicts between principles and context. This allows for a clear, traceable reasoning path from ethical values to actionable outcomes.
+\end{enumerate}
+
+\subsubsection{Prompt Design and Execution}
+
+For each level of the hierarchy, prompts are designed with specific language that encourages step-by-step reasoning:
+\begin{itemize}
+    \item \textbf{Top-Level Prompts}: We use open-ended questions that invoke ethical frameworks directly, such as "Consider the principle of maximizing well-being..." or "Evaluate this scenario from a deontological perspective..."
+    \item \textbf{Mid-Level Prompts}: These prompts guide the model to apply high-level principles to the scenario’s specific context. Examples include, "In this situation, how might the principle of moral duty influence the actions of individuals involved?" or "What are the potential outcomes, and how do they align with ethical principles?"
+    \item \textbf{Low-Level Prompts}: These prompts drive the model towards a decision and an explanation, such as "Based on the ethical principles and context, what action would best align with the chosen ethical framework? Explain your reasoning."
+\end{itemize}
+
+\subsubsection{Iterative Refinement and Feedback}
+
+The hierarchical prompting framework also incorporates an iterative refinement process. If the model's response lacks clarity or fails to fully consider the ethical dimensions, additional prompts are used to request clarification or re-evaluation:
+\begin{itemize}
+    \item \textbf{Self-Reflection Prompts}: After the initial response, the model is prompted to review its own answer for consistency and completeness. For example, "Reflect on your answer: Does this decision fully align with the ethical principles considered?"
+    \item \textbf{Conflict Resolution Prompts}: If the model identifies conflicting ethical principles, it is prompted to resolve these by prioritizing the most relevant principles, such as "Given a conflict between fairness and well-being, which principle should guide the final decision, and why?"
+\end{itemize}
+
+
+\subsubsection{Expected Benefits of Hierarchical Prompting}
+
+By structuring moral decision-making in this layered approach, we aim to achieve several key benefits:
+\begin{itemize}
+    \item \textbf{Improved Interpretability}: Hierarchical prompting breaks down the decision-making process into clear steps, making it easier to trace how the model arrived at a given conclusion.
+    \item \textbf{Enhanced Ethical Alignment}: This approach allows the model to engage with ethical principles more explicitly, helping to mitigate biases and align its outputs with well-defined moral standards.
+    \item \textbf{Consistency in Ethical Reasoning}: By using a structured framework, the model is more likely to produce consistent and stable responses across similar ethical dilemmas.
+\end{itemize}
+
+\subsubsection{Design of prompts}
+
+This remains an open question as of the submission of this progress report. We hope to fine-tune these generic prompts to generate good reasoning steps. A possible approach would be to draw on the work of Klingefjord et al. 2024) \cite{klingefjord2024humanvaluesalignai} in generating a prompt reflecting the ordered priorities of human values elicited from a human population, but more testing has to be done to ascertain the feasibility of this approach.
+
+
+\section{Experimental design}
+
+We aim to conduct trials to investigate how these new prompting methodologies affect the performance of models of different sizes in moral decision-making tasks. Our experiments will be conducted in three main phases, each designed to assess specific aspects of ethical alignment and interpretability in LLMs.
+
+\begin{enumerate}
+    \item \textbf{Baseline Testing}:
+    
+    In the first phase, we test a baseline of vanilla, unmodified models on moral reasoning datasets without any additional prompts or guidance. This allows us to establish a performance benchmark and assess how models respond without ethical conditioning. These baseline results will serve as a control to evaluate improvements from subsequent prompting techniques.
+    
+    \item \textbf{Top-Down Ethical Prompting}:
+    
+    In the second phase, we condition the models with prompts instructing them to consider specific ethical frameworks based on top-down approaches (e.g., deontological or utilitarian ethics). These prompts will specify the ethical reasoning approach that the model should follow in its responses, encouraging alignment with predefined ethical rules. This stage will help us assess the models' capacity to adhere to a top-down ethical structure and compare this alignment across models of different sizes.
+    
+    \item \textbf{Hierarchical Prompting Approach}:
+    
+    Finally, we implement our novel hierarchical prompting approach, designed to guide models through structured, multi-step reasoning processes for ethical decision-making. This approach involves prompting models in a staged manner, starting from high-level ethical principles down to context-specific considerations. By breaking down the decision-making process into hierarchical steps, we aim to improve both the interpretability of model outputs and adherence to ethical principles.
+\end{enumerate}
+
+\subsection{Datasets}
+
+We will utilize multiple datasets that cover a wide range of moral and ethical dilemmas, such as hypothetical scenarios, real-world ethical issues, and moral reasoning tests. ETHICS \cite{hendrycks_aligning_2023} and Moral Stories \cite{emelin_moral_2020} will allow us to assess the models' ability to respond to ethical challenges and compare how different prompting techniques influence their decision-making.
+
+\subsection{Evaluation Metrics}
+
+To evaluate the performance of each model and prompting method, we will use the following metrics:
+
+\begin{itemize}
+    \item \textbf{Accuracy of Ethical Alignment}: The degree to which the model's responses align with expected ethical principles in a given scenario.
+    \item \textbf{Consistency across Prompts}: We will measure the consistency of model outputs across similar scenarios to gauge if the model maintains stable ethical reasoning.
+    \item \textbf{Interpretability}: Assessing whether the model’s reasoning process is transparent and whether the hierarchical steps in the response are logically coherent and traceable.
+    \item \textbf{Bias and Fairness}: Testing for biases in the model's responses to ensure that the model's ethical alignment does not disproportionately favor or disadvantage particular groups.
+    \item \textbf{Response Diversity}: Evaluating the range of responses the model provides across prompts to see if it demonstrates nuanced understanding rather than rigid rule-following.
+\end{itemize}
+
+\subsection{Model Sizes and Variants}
+
+We will conduct the experiments on a variety of model sizes to understand how model capacity affects ethical reasoning capabilities. By comparing the performance across different sizes, we aim to determine if smaller models benefit from more consistent moral alignment and if they better utilize hierarchical prompting. The models earmarked can be found in table \ref{tab:language_models}, chosen for their accessibility and variance in size.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Model} & \textbf{Parameters (Billion)} & \textbf{Release Date} \\
+\hline
+GPT-2 \cite{radford_language_nodate} & 1.5 & Feb 2019 \\
+GPT-3.5 Turbo \cite{brown_language_2020} & Not Disclosed  (est. around 22B) & Jun 2020 \\
+GPT-4 \cite{openai_gpt-4_2024} & Not Disclosed & Mar 2023 \\
+Llama 3.2 1B \cite{noauthor_llama_nodate} & 1 & Sep 2024 \\
+Llama 3.2 3B \cite{noauthor_llama_nodate} & 3 & Sep 2024 \\
+\hline
+\end{tabular}
+\caption{Currently accessible Language Models and Their Sizes}
+\label{tab:language_models}
+\end{table}
+
+\subsubsection{Planned analysis}
+
+Data from the experiments will be analyzed to determine the effectiveness of each prompting approach in improving ethical reasoning. Statistical analyses will be conducted to compare results between the baseline, top-down prompting, and hierarchical prompting conditions. We will also perform qualitative analysis on select responses to highlight examples where hierarchical prompting leads to enhanced ethical decision-making. The findings will be used to refine the hierarchical prompting method and identify areas for future improvement.
+
+
+\section{Progress and preliminary findings}
+
+So far, effort has mainly been focused on narrowing the scope and determining a relevant research question. Due to the recent emergence of this field, research has been slow; Many of the papers read in formulating this research direction were published only in the last quarter of this year. Key insights were drawn from the papers describing structured and explainable approaches to moral decision-making.
+
+
+\section{Research Plan}
+
+This section outlines the research plan for the next phases of the project.
+
+\subsection{Phase 1: Refinement of Hierarchical Prompting Framework (Winter '24)}
+
+\begin{itemize}
+    \item \textbf{Objective}: To refine the hierarchical prompting framework based on insights gained from preliminary testing.
+    \item \textbf{Tasks}:
+        \begin{enumerate}
+            \item Develop the scripts for running experiments on the SoC compute cluster
+            \item Develop additional prompts tailored to specific ethical frameworks.
+            \item Conduct small-scale tests on a subset of scenarios and ascertain that our evaluation metrics make sense.
+        \end{enumerate}
+\end{itemize}
+
+\subsection{Phase 2: Preliminary Experimental Trials (Sem 2 Weeks 1-4)}
+
+\begin{itemize}
+    \item \textbf{Objective}: To evaluate the hierarchical prompting framework's effectiveness on models of varying sizes.
+    \item \textbf{Tasks}:
+        \begin{enumerate}
+            \item Conduct baseline tests on the selected language models without any prompting, as well as with top-down ethical prompts.
+            \item Apply the hierarchical prompting framework to each model across a set of ethical scenarios. 
+            \item Record model responses and assess them based on predefined metrics (e.g., ethical alignment, consistency, interpretability, and bias).
+        \end{enumerate}
+    \item \textbf{Expected Outcome}: Testing scripts should be free of bugs. 
+    Should the experiments run to completion, preliminary data analysis should be carried out to find the results of the experiments.
+\end{itemize}
+
+\subsection{Phase 3: Data Analysis and Model Comparison (Weeks 5-6)}
+
+\begin{itemize}
+    \item \textbf{Objective}: To analyze experimental results.
+    \item \textbf{Tasks}:
+        \begin{enumerate}
+            \item Perform statistical analysis to compare model performance under baseline, top-down, and hierarchical prompting conditions.
+            \item Conduct qualitative analysis to examine patterns in model responses, identifying any trends in ethical alignment and reasoning quality.
+        \end{enumerate}
+    \item \textbf{Expected Outcome}: insights into the comparative effectiveness of hierarchical prompting
+\end{itemize}
+
+\subsection{Phase 4: Final Refinement and Reporting (Weeks 7-10)}
+
+\begin{itemize}
+    \item \textbf{Objective}: To finalize FYP report
+    \item \textbf{Tasks}:
+        \begin{enumerate}
+            \item Draft the final report, including an introduction to the project, methodology, results, analysis, and conclusions.
+            \item Prepare visual aids (e.g., tables, graphs) for the report to effectively communicate findings.
+        \end{enumerate}
+    \item \textbf{Expected Outcome}: A completed report
+\end{itemize}
+
+
+\subsection{Future Directions}
+
+Further research could explore extending this framework to different ethical approaches, especially those under-represented in current literature such as eastern philosophy or empathy modeling. Additionally, incorporating feedback mechanisms could enhance the model's adaptive ethical reasoning capabilities, which could prove interesting in further analysis of embodied morality.
+
+
+\bibliographystyle{apalike}
+
+\bibliography{Progressreport}
+
+\end{document}
