@@ -23,7 +23,7 @@ def get_system_prompt(perspective):
             system_prompt = SystemPrompt.DEONTOLOGY.value
         case "consequentialist":
             system_prompt = SystemPrompt.CONSEQUENTIALISM.value
-        case "virtue ethics":
+        case "virtue_ethics":
             system_prompt = SystemPrompt.VIRTUE_ETHICS.value
         case _:
             print(f"Unknown ethical perspective: {perspective}. Using default.")
